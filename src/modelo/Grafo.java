@@ -21,19 +21,16 @@ public class Grafo {
         adyacencias.put(nodo.getId(), new ArrayList<>());
     }
 
-    // --- NUEVO MÉTODO PARA BORRAR UN NODO ---
     public void eliminarNodo(String id) {
         if (nodos.containsKey(id)) {
             nodos.remove(id); // Borra el nodo
-            adyacencias.remove(id); // Borra su lista de amigos
-            
-            // Borra cualquier conexión que otros nodos tengan con este
+            adyacencias.remove(id); 
             for (List<String> vecinos : adyacencias.values()) {
                 vecinos.remove(id);
             }
         }
     }
-    // ----------------------------------------
+
 
     public void agregarArista(String a, String b) {
         if (!adyacencias.containsKey(a) || !adyacencias.containsKey(b)) return;
