@@ -4,6 +4,8 @@ import vista.VentanaPrincipal;
 
 public class App {
     public static void main(String[] args) {
-        new Controlador(new Grafo(), new VentanaPrincipal());
+        javax.swing.SwingUtilities.invokeLater(() -> {
+            new Controlador(new Grafo(), new VentanaPrincipal());
+        });
     }
 }
