@@ -1,6 +1,7 @@
-import controlador.Controlador;
-import modelo.Grafo;
-import vista.VentanaPrincipal;
+package view;
+
+import controller.Controlador;
+import model.Grafo;
 
 public class App {
     public static void main(String[] args) {
