@@ -2,10 +2,11 @@ package controller;
 
 import java.awt.event.*;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import javax.swing.*;
 import model.*;
-import view.VentanaPrincipal;
+import view.*;
 
 public class Controlador {
 
@@ -22,10 +23,11 @@ public class Controlador {
     private List<Nodo> nodosAnimados;
     private int indiceAnimacion = 0;
 
-
     private int contador = 1000;
-
     private String modo = "";
+
+    private List<Long> tiemposBFS = new ArrayList<>();
+    private List<Long> tiemposDFS = new ArrayList<>();
 
     public Controlador(Grafo modelo, VentanaPrincipal vista) {
         this.modelo = modelo;
@@ -33,6 +35,7 @@ public class Controlador {
 
         init();
         cargarDatos();
+        ajustarContador();
 
         vista.setVisible(true);
     }
@@ -75,15 +78,15 @@ public class Controlador {
         });
 
         vista.getBtnLimpiar().addActionListener(e -> {
-
             inicio = null;
             fin = null;
             nodoTemporal = null;
 
-            modelo.reiniciar();    
-            cargarDatos();       
+            modelo.reiniciar();
+            cargarDatos();   
 
             vista.getPanelMapa().setNodoSeleccionado(null);
+            actualizarVista(null);
             vista.setInfo("Sistema restaurado al último guardado.");
         });
 
@@ -93,16 +96,38 @@ public class Controlador {
             vista.setInfo("Progreso guardado.");
         });
 
+        vista.getBtnTiempos().addActionListener(e -> {
+            new VentanaTiempos(tiemposBFS, tiemposDFS).setVisible(true);
+        });
+
         vista.getPanelMapa().addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-
                 int realX = vista.getPanelMapa().convertirX(e.getX());
                 int realY = vista.getPanelMapa().convertirY(e.getY());
-
                 manejarClick(realX, realY);
             }
         });
+    }
+
+    private void ajustarContador() {
+
+        int max = 1000;
+
+        for (String id : modelo.getNodos().keySet()) {
+
+            if (id.startsWith("N_User_")) {
+
+                try {
+                    int numero = Integer.parseInt(id.replace("N_User_", ""));
+                    if (numero >= max) {
+                        max = numero + 1;
+                    }
+                } catch (Exception ignored) {}
+            }
+        }
+
+        contador = max;
     }
 
     private void cargarDatos() {
@@ -126,7 +151,6 @@ public class Controlador {
             case "INICIO":
                 if (nodoCercano != null) {
                     inicio = nodoCercano;
-                    vista.setInfo("Inicio: " + nodoCercano.getId());
                     actualizarVista(null);
                 }
                 break;
@@ -134,7 +158,6 @@ public class Controlador {
             case "FIN":
                 if (nodoCercano != null) {
                     fin = nodoCercano;
-                    vista.setInfo("Fin: " + nodoCercano.getId());
                     actualizarVista(null);
                 }
                 break;
@@ -143,93 +166,128 @@ public class Controlador {
                 String nuevoId = "N_User_" + contador++;
                 modelo.agregarNodo(new Nodo(nuevoId, x, y, false));
                 actualizarVista(null);
-                vista.setInfo("Nodo creado: " + nuevoId);
                 break;
 
             case "BORRAR":
-
                 if (nodoCercano != null) {
-
                     modelo.eliminarNodo(nodoCercano.getId());
-
                     if (inicio == nodoCercano) inicio = null;
                     if (fin == nodoCercano) fin = null;
-
                     actualizarVista(null);
-                    vista.setInfo("Nodo eliminado.");
                 }
-
                 break;
-
 
             case "UNIR":
 
-                if (nodoCercano != null) {
+                if (nodoCercano == null) return;
 
-                    if (nodoTemporal == null) {
-                        nodoTemporal = nodoCercano;
-                        vista.getPanelMapa().setNodoSeleccionado(nodoTemporal);
-                        vista.setInfo("Seleccione el segundo nodo.");
-                        return;
-                    }
+                if (nodoTemporal == null) {
+                    nodoTemporal = nodoCercano;
+                    vista.getPanelMapa().setNodoSeleccionado(nodoTemporal);
+                    vista.setInfo("Seleccione el segundo nodo.");
+                    return;
+                }
 
-                    if (nodoTemporal == nodoCercano) {
-                        return;
-                    }
+                if (nodoTemporal == nodoCercano) return;
 
-                    int dx = Math.abs(nodoTemporal.getX() - nodoCercano.getX());
-                    int dy = Math.abs(nodoTemporal.getY() - nodoCercano.getY());
+                int dx = nodoCercano.getX() - nodoTemporal.getX();
+                int dy = nodoCercano.getY() - nodoTemporal.getY();
 
-                    if (dx > 20 && dy > 20) {
+                boolean esHorizontal = Math.abs(dy) < 20;
+                boolean esVertical   = Math.abs(dx) < 20;
 
-                        JOptionPane.showMessageDialog(
-                                vista,
-                                "Solo se puede conectar de manera horizontal o vertical.",
-                                "Conexión inválida",
-                                JOptionPane.ERROR_MESSAGE
-                        );
+                if (!(esHorizontal || esVertical)) {
 
-                        nodoTemporal = null;
-                        vista.getPanelMapa().setNodoSeleccionado(null);
-                        return;
-                    }
-
-                    int opcion = JOptionPane.showOptionDialog(
+                    JOptionPane.showMessageDialog(
                             vista,
-                            "Seleccione tipo de conexión:",
-                            "Tipo de Arista",
-                            JOptionPane.DEFAULT_OPTION,
-                            JOptionPane.QUESTION_MESSAGE,
-                            null,
-                            new Object[]{"Bidireccional", "Unidireccional"},
-                            "Bidireccional"
+                            "Solo se pueden conectar nodos vecinos (arriba, abajo, izquierda o derecha).",
+                            "Conexión inválida",
+                            JOptionPane.ERROR_MESSAGE
                     );
-
-                    if (opcion == 0) {
-                        // Bidireccional
-                        modelo.agregarArista(
-                                nodoTemporal.getId(),
-                                nodoCercano.getId(),
-                                true,
-                                true
-                        );
-                    }
-                    else if (opcion == 1) {
-                        // Unidireccional
-                        modelo.agregarArista(
-                                nodoTemporal.getId(),
-                                nodoCercano.getId(),
-                                true,
-                                false
-                        );
-                    }
 
                     nodoTemporal = null;
                     vista.getPanelMapa().setNodoSeleccionado(null);
-                    actualizarVista(null);
-                    vista.setInfo("Conexión creada.");
+                    return;
                 }
 
+                // 🔥 VERIFICAR QUE NO HAYA NODOS ENTRE MEDIO
+                for (Nodo n : modelo.getNodos().values()) {
+
+                    if (n == nodoTemporal || n == nodoCercano) continue;
+
+                    if (esHorizontal) {
+
+                        if (Math.abs(n.getY() - nodoTemporal.getY()) < 20) {
+
+                            if ((n.getX() > nodoTemporal.getX() && n.getX() < nodoCercano.getX()) ||
+                                (n.getX() < nodoTemporal.getX() && n.getX() > nodoCercano.getX())) {
+
+                                JOptionPane.showMessageDialog(
+                                        vista,
+                                        "Existe un nodo intermedio. Solo puedes unir vecinos directos.",
+                                        "Conexión inválida",
+                                        JOptionPane.ERROR_MESSAGE
+                                );
+
+                                nodoTemporal = null;
+                                vista.getPanelMapa().setNodoSeleccionado(null);
+                                return;
+                            }
+                        }
+
+                    } else if (esVertical) {
+
+                        if (Math.abs(n.getX() - nodoTemporal.getX()) < 20) {
+
+                            if ((n.getY() > nodoTemporal.getY() && n.getY() < nodoCercano.getY()) ||
+                                (n.getY() < nodoTemporal.getY() && n.getY() > nodoCercano.getY())) {
+
+                                JOptionPane.showMessageDialog(
+                                        vista,
+                                        "Existe un nodo intermedio. Solo puedes unir vecinos directos.",
+                                        "Conexión inválida",
+                                        JOptionPane.ERROR_MESSAGE
+                                );
+
+                                nodoTemporal = null;
+                                vista.getPanelMapa().setNodoSeleccionado(null);
+                                return;
+                            }
+                        }
+                    }
+                }
+
+                int opcion = JOptionPane.showOptionDialog(
+                        vista,
+                        "Seleccione tipo de conexión:",
+                        "Tipo de Arista",
+                        JOptionPane.DEFAULT_OPTION,
+                        JOptionPane.QUESTION_MESSAGE,
+                        null,
+                        new Object[]{"Bidireccional", "Unidireccional"},
+                        "Bidireccional"
+                );
+
+                if (opcion == 0) {
+                    modelo.agregarArista(
+                            nodoTemporal.getId(),
+                            nodoCercano.getId(),
+                            true,
+                            true
+                    );
+                } else if (opcion == 1) {
+                    modelo.agregarArista(
+                            nodoTemporal.getId(),
+                            nodoCercano.getId(),
+                            true,
+                            false
+                    );
+                }
+
+                nodoTemporal = null;
+                vista.getPanelMapa().setNodoSeleccionado(null);
+                actualizarVista(null);
+                vista.setInfo("Conexión creada.");
                 break;
 
             case "ROMPER":
@@ -247,14 +305,13 @@ public class Controlador {
                     }
                 }
                 break;
+
         }
     }
 
     private Nodo buscarNodo(int x, int y) {
         for (Nodo n : modelo.getNodos().values()) {
-            if (n.getPoint().distance(x, y) < 25) {
-                return n;
-            }
+            if (n.getPoint().distance(x, y) < 25) return n;
         }
         return null;
     }
@@ -262,8 +319,7 @@ public class Controlador {
     private void ejecutar(String tipo) {
 
         if (inicio == null || fin == null) {
-            JOptionPane.showMessageDialog(vista,
-                    "Seleccione inicio y fin.");
+            JOptionPane.showMessageDialog(vista, "Seleccione inicio y fin.");
             return;
         }
 
@@ -275,6 +331,13 @@ public class Controlador {
             vista.setInfo("No existe ruta.");
             return;
         }
+
+        if (tipo.equals("BFS")) {
+            tiemposBFS.add(res.tiempo);
+        } else {
+            tiemposDFS.add(res.tiempo);
+        }
+        exportarCSV();
 
         boolean modoAnimado =
                 vista.getComboModo().getSelectedIndex() == 1;
@@ -295,14 +358,13 @@ public class Controlador {
             return;
         }
 
-        if (timerAnimacion != null && timerAnimacion.isRunning()) {
+        if (timerAnimacion != null && timerAnimacion.isRunning())
             timerAnimacion.stop();
-        }
 
-        nodosAnimados = new java.util.ArrayList<>();
+        nodosAnimados = new ArrayList<>();
         indiceAnimacion = 0;
 
-        timerAnimacion = new javax.swing.Timer(150, e -> {
+        timerAnimacion = new Timer(150, e -> {
 
             if (indiceAnimacion < res.visitados.size()) {
 
@@ -322,7 +384,7 @@ public class Controlador {
 
             } else {
 
-                ((javax.swing.Timer) e.getSource()).stop();
+                ((Timer) e.getSource()).stop();
 
                 vista.getPanelMapa().actualizar(
                         modelo.getNodos(),
@@ -341,49 +403,33 @@ public class Controlador {
         timerAnimacion.start();
     }
 
-    private void iniciarAnimacion(ResultadoBusqueda res) {
+    private void exportarCSV() {
 
-        java.util.List<Nodo> visitados = res.visitados;
-        java.util.List<Nodo> rutaFinal = res.ruta;
+        try (java.io.PrintWriter pw = new java.io.PrintWriter("tiempos.csv")) {
 
-        javax.swing.Timer timer = new javax.swing.Timer(200, null);
+            pw.println("Ejecucion,BFS_ms,DFS_ms");
 
-        final int[] indice = {0};
+            int total = Math.max(tiemposBFS.size(), tiemposDFS.size());
 
-        timer.addActionListener(e -> {
+            for (int i = 0; i < total; i++) {
 
-            if (indice[0] < visitados.size()) {
+                double bfs = i < tiemposBFS.size()
+                        ? tiemposBFS.get(i) / 1_000_000.0
+                        : 0;
 
-                java.util.List<Nodo> parcial =
-                        visitados.subList(0, indice[0] + 1);
+                double dfs = i < tiemposDFS.size()
+                        ? tiemposDFS.get(i) / 1_000_000.0
+                        : 0;
 
-                vista.getPanelMapa().actualizar(
-                        modelo.getNodos(),
-                        modelo.getAristasVisibles(),
-                        null,
-                        parcial,
-                        null,
-                        inicio,
-                        fin
-                );
-
-                indice[0]++;
-
-            } else {
-
-                timer.stop();
-
-                actualizarVista(rutaFinal);
-
-                vista.setInfo("Ruta encontrada.");
+                pw.println((i + 1) + "," + bfs + "," + dfs);
             }
-        });
 
-        timer.start();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
-    private void actualizarVista(java.util.List<Nodo> ruta) {
-
+    private void actualizarVista(List<Nodo> ruta) {
         vista.getPanelMapa().actualizar(
                 modelo.getNodos(),
                 modelo.getAristasVisibles(),

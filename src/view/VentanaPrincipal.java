@@ -7,14 +7,17 @@ import javax.swing.*;
 public class VentanaPrincipal extends JFrame {
 
     private MapaPanel panelMapa;
+
     private JButton btnInicio, btnFin, btnBFS, btnDFS;
+    private JButton btnNodo, btnArista, btnBorrarNodo, btnBorrarArista;
+    private JButton btnLimpiar, btnGuardar, btnTiempos;
+
     private JComboBox<String> comboModo;
     private JLabel lblInfo;
-    private JButton btnNodo, btnArista, btnBorrarNodo, btnBorrarArista, btnLimpiar, btnGuardar;
 
     public VentanaPrincipal() {
 
-        setTitle("Sistema de Rutas - Proyecto Final");
+        setTitle("MAPA - Centro de Cuenca");
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -30,18 +33,21 @@ public class VentanaPrincipal extends JFrame {
         btnBorrarNodo = new JButton("Eliminar Nodo");
         btnArista = new JButton("Crear Conexión");
         btnBorrarArista = new JButton("Eliminar Conexión");
+
         btnLimpiar = new JButton("Resetear");
         btnGuardar = new JButton("Guardar");
+        btnTiempos = new JButton("Ver Tiempos");
 
         btnLimpiar.setBackground(new Color(255, 200, 200));
         btnGuardar.setBackground(new Color(200, 255, 200));
+        btnTiempos.setBackground(new Color(200, 220, 255));
 
         btnInicio = new JButton("INICIO");
         btnFin = new JButton("FIN");
 
         String[] modos = {
-            "Modo: RUTA INSTANTÁNEA",
-            "Modo: ANIMACIÓN EXPLORACIÓN"
+                "Modo: RUTA INSTANTÁNEA",
+                "Modo: ANIMACIÓN EXPLORACIÓN"
         };
 
         comboModo = new JComboBox<>(modos);
@@ -59,6 +65,7 @@ public class VentanaPrincipal extends JFrame {
         toolbar.add(new JLabel(" ACCIONES: "));
         toolbar.add(btnLimpiar);
         toolbar.add(btnGuardar);
+        toolbar.add(btnTiempos);
         toolbar.addSeparator();
 
         toolbar.add(new JLabel(" RUTA: "));
@@ -77,16 +84,24 @@ public class VentanaPrincipal extends JFrame {
     }
 
     public MapaPanel getPanelMapa() { return panelMapa; }
+
     public JButton getBtnInicio() { return btnInicio; }
     public JButton getBtnFin() { return btnFin; }
     public JButton getBtnBFS() { return btnBFS; }
     public JButton getBtnDFS() { return btnDFS; }
+
     public JComboBox<String> getComboModo() { return comboModo; }
+
     public JButton getBtnNodo() { return btnNodo; }
     public JButton getBtnArista() { return btnArista; }
     public JButton getBtnBorrarNodo() { return btnBorrarNodo; }
     public JButton getBtnBorrarArista() { return btnBorrarArista; }
+
     public JButton getBtnLimpiar() { return btnLimpiar; }
     public JButton getBtnGuardar() { return btnGuardar; }
-    public void setInfo(String texto) { lblInfo.setText(texto); }
+    public JButton getBtnTiempos() { return btnTiempos; }
+
+    public void setInfo(String texto) {
+        lblInfo.setText(texto);
+    }
 }

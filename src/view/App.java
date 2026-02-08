@@ -4,7 +4,7 @@ import controller.Controlador;
 import model.Grafo;
 
 public class App {
-    public static void main(String[] args) {
+        public static void main(String[] args) {
         javax.swing.SwingUtilities.invokeLater(() -> {
             new Controlador(new Grafo(), new VentanaPrincipal());
         });

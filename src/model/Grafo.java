@@ -23,7 +23,7 @@ public class Grafo {
 
     public void agregarNodo(Nodo nodo) {
         nodos.put(nodo.getId(), nodo);
-        adyacencias.putIfAbsent(nodo.getId(), new ArrayList<>());
+        adyacencias.put(nodo.getId(), new ArrayList<>());
     }
 
     public void eliminarNodo(String id) {
@@ -59,9 +59,6 @@ public class Grafo {
         }
     }
 
-
-
-
     public void eliminarArista(String a, String b) {
 
         if (adyacencias.containsKey(a))
@@ -70,10 +67,17 @@ public class Grafo {
         if (adyacencias.containsKey(b))
             adyacencias.get(b).remove(a);
 
-        aristasVisibles.remove(a + "-" + b);
-        aristasVisibles.remove(b + "-" + a);
-    }
+        String clave1 = a + "-" + b;
+        String clave2 = b + "-" + a;
 
+        if (aristasVisibles.containsKey(clave1)) {
+            aristasVisibles.remove(clave1);
+        }
+
+        if (aristasVisibles.containsKey(clave2)) {
+            aristasVisibles.remove(clave2);
+        }
+    }
 
     public ResultadoBusqueda bfsCompleto(String inicio, String fin) {
 
@@ -126,41 +130,56 @@ public class Grafo {
         long startTime = System.nanoTime();
 
         List<Nodo> visitadosOrden = new ArrayList<>();
-        Stack<String> pila = new Stack<>();
         Set<String> visitados = new HashSet<>();
         Map<String, String> padres = new HashMap<>();
 
-        pila.push(inicio);
+        boolean encontrado = dfsRecursivo(
+                inicio,
+                fin,
+                visitados,
+                padres,
+                visitadosOrden
+        );
 
-        while (!pila.isEmpty()) {
+        if (!encontrado) return null;
 
-            String actual = pila.pop();
+        long tiempo = System.nanoTime() - startTime;
 
-            if (!visitados.contains(actual)) {
+        return new ResultadoBusqueda(
+                reconstruirCamino(padres, fin),
+                visitadosOrden,
+                padres,
+                tiempo
+        );
+    }
 
-                visitados.add(actual);
-                visitadosOrden.add(nodos.get(actual));
+    private boolean dfsRecursivo(
+        String actual,
+        String destino,
+        Set<String> visitados,
+        Map<String, String> padres,
+        List<Nodo> visitadosOrden) {
 
-                if (actual.equals(fin)) {
-                    long tiempo = System.nanoTime() - startTime;
-                    return new ResultadoBusqueda(
-                            reconstruirCamino(padres, fin),
-                            visitadosOrden,
-                            padres,
-                            tiempo
-                    );
-                }
+        visitados.add(actual);
+        visitadosOrden.add(nodos.get(actual));
 
-                for (String vecino : adyacencias.get(actual)) {
-                    if (!visitados.contains(vecino)) {
-                        padres.put(vecino, actual);
-                        pila.push(vecino);
-                    }
+        if (actual.equals(destino)) {
+            return true;
+        }
+
+        for (String vecino : adyacencias.get(actual)) {
+
+            if (!visitados.contains(vecino)) {
+
+                padres.put(vecino, actual);
+
+                if (dfsRecursivo(vecino, destino, visitados, padres, visitadosOrden)) {
+                    return true;
                 }
             }
         }
 
-        return null;
+        return false;
     }
 
     private List<Nodo> reconstruirCamino(Map<String, String> padres, String fin) {

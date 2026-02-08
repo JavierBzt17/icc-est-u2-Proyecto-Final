@@ -1,6 +1,7 @@
 package view;
 
 import java.awt.*;
+import java.net.URL;
 import java.util.*;
 import java.util.List;
 import javax.swing.*;
@@ -8,9 +9,9 @@ import model.Nodo;
 
 public class MapaPanel extends JPanel {
 
-    private Image mapa;
-    private int imgW;
-    private int imgH;
+    private final Image mapa;
+    private final int imgW;
+    private final int imgH;
 
     private double escala;
     private int offsetX;
@@ -27,7 +28,12 @@ public class MapaPanel extends JPanel {
 
     public MapaPanel() {
 
-        ImageIcon icono = new ImageIcon("resources/Mapa.png");
+        URL url = getClass().getResource("/resources/Mapa.png");
+        if (url == null) {
+            throw new RuntimeException("No se encontró /resources/Mapa.png en el classpath");
+        }
+
+        ImageIcon icono = new ImageIcon(url);
         mapa = icono.getImage();
         imgW = icono.getIconWidth();
         imgH = icono.getIconHeight();
@@ -44,17 +50,13 @@ public class MapaPanel extends JPanel {
 
         this.nodos = nodos;
         this.aristasVisibles = aristas;
-
         this.rutaFinal = ruta;
         this.nodosAnimacion = animacion;
-
         this.nodoInicio = inicio;
         this.nodoFin = fin;
 
         repaint();
     }
-
-
 
     @Override
     protected void paintComponent(Graphics g) {
@@ -112,6 +114,10 @@ public class MapaPanel extends JPanel {
                             g2.setColor(new Color(90, 90, 90));
 
                         g2.drawLine(x1, y1, x2, y2);
+
+                        if (!bidireccional) {
+                            dibujarFlecha(g2, x1, y1, x2, y2);
+                        }
                     }
                 }
             }
@@ -149,14 +155,43 @@ public class MapaPanel extends JPanel {
             else if (n == nodoFin)
                 g2.setColor(Color.RED);
             else if (nodosAnimacion != null && nodosAnimacion.contains(n))
-                g2.setColor(Color.CYAN); 
+                g2.setColor(Color.CYAN);
             else if (rutaFinal != null && rutaFinal.contains(n))
-                g2.setColor(Color.BLUE); 
+                g2.setColor(Color.BLUE);
             else
                 g2.setColor(Color.BLACK);
 
             g2.fillOval(x - 6, y - 6, 12, 12);
         }
+    }
+
+    private void dibujarFlecha(Graphics2D g2,
+                               int x1, int y1,
+                               int x2, int y2) {
+
+        double dx = x2 - x1;
+        double dy = y2 - y1;
+
+        double angle = Math.atan2(dy, dx);
+
+        int arrowLength = 10;
+        int arrowWidth = 6;
+
+        int xArrow = (int) (x2 - arrowLength * Math.cos(angle));
+        int yArrow = (int) (y2 - arrowLength * Math.sin(angle));
+
+        Polygon flecha = new Polygon();
+        flecha.addPoint(x2, y2);
+        flecha.addPoint(
+                (int)(xArrow - arrowWidth * Math.sin(angle)),
+                (int)(yArrow + arrowWidth * Math.cos(angle))
+        );
+        flecha.addPoint(
+                (int)(xArrow + arrowWidth * Math.sin(angle)),
+                (int)(yArrow - arrowWidth * Math.cos(angle))
+        );
+
+        g2.fillPolygon(flecha);
     }
 
     public int convertirX(int mouseX) {
