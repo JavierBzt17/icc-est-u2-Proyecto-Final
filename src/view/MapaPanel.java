@@ -1,7 +1,8 @@
 package view;
 
 import java.awt.*;
-import java.util.Map;
+import java.util.*;
+import java.util.List;
 import javax.swing.*;
 import model.Nodo;
 
@@ -17,6 +18,8 @@ public class MapaPanel extends JPanel {
 
     private Map<String, Nodo> nodos;
     private Map<String, Boolean> aristasVisibles;
+    private List<Nodo> nodosAnimacion;
+    private List<Nodo> rutaFinal;
 
     private Nodo nodoInicio;
     private Nodo nodoFin;
@@ -32,20 +35,26 @@ public class MapaPanel extends JPanel {
 
     public void actualizar(
             Map<String, Nodo> nodos,
-            Map<String, Boolean> aristasVisibles,
-            java.util.List<Nodo> ruta,
-            java.util.List<Nodo> animacion,
+            Map<String, Boolean> aristas,
+            List<Nodo> ruta,
+            List<Nodo> animacion,
             Map<String, String> padres,
             Nodo inicio,
             Nodo fin) {
 
         this.nodos = nodos;
-        this.aristasVisibles = aristasVisibles;
+        this.aristasVisibles = aristas;
+
+        this.rutaFinal = ruta;
+        this.nodosAnimacion = animacion;
+
         this.nodoInicio = inicio;
         this.nodoFin = fin;
 
         repaint();
     }
+
+
 
     @Override
     protected void paintComponent(Graphics g) {
@@ -70,6 +79,8 @@ public class MapaPanel extends JPanel {
         if (nodos == null) return;
 
         Graphics2D g2 = (Graphics2D) g;
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                RenderingHints.VALUE_ANTIALIAS_ON);
 
         if (aristasVisibles != null) {
 
@@ -106,6 +117,26 @@ public class MapaPanel extends JPanel {
             }
         }
 
+        if (rutaFinal != null && rutaFinal.size() > 1) {
+
+            g2.setColor(Color.BLUE);
+            g2.setStroke(new BasicStroke(4));
+
+            for (int i = 0; i < rutaFinal.size() - 1; i++) {
+
+                Nodo n1 = rutaFinal.get(i);
+                Nodo n2 = rutaFinal.get(i + 1);
+
+                int x1 = (int) (n1.getX() * escala) + offsetX;
+                int y1 = (int) (n1.getY() * escala) + offsetY;
+
+                int x2 = (int) (n2.getX() * escala) + offsetX;
+                int y2 = (int) (n2.getY() * escala) + offsetY;
+
+                g2.drawLine(x1, y1, x2, y2);
+            }
+        }
+
         for (Nodo n : nodos.values()) {
 
             int x = (int) (n.getX() * escala) + offsetX;
@@ -117,6 +148,10 @@ public class MapaPanel extends JPanel {
                 g2.setColor(Color.GREEN);
             else if (n == nodoFin)
                 g2.setColor(Color.RED);
+            else if (nodosAnimacion != null && nodosAnimacion.contains(n))
+                g2.setColor(Color.CYAN); 
+            else if (rutaFinal != null && rutaFinal.contains(n))
+                g2.setColor(Color.BLUE); 
             else
                 g2.setColor(Color.BLACK);
 

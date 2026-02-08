@@ -2,7 +2,8 @@ package controller;
 
 import java.awt.event.*;
 import java.io.File;
-import javax.swing.JOptionPane;
+import java.util.List;
+import javax.swing.*;
 import model.*;
 import view.VentanaPrincipal;
 
@@ -16,6 +17,11 @@ public class Controlador {
     private Nodo inicio = null;
     private Nodo fin = null;
     private Nodo nodoTemporal = null;
+
+    private Timer timerAnimacion;
+    private List<Nodo> nodosAnimados;
+    private int indiceAnimacion = 0;
+
 
     private int contador = 1000;
 
@@ -270,8 +276,110 @@ public class Controlador {
             return;
         }
 
-        actualizarVista(res.ruta);
-        vista.setInfo("Ruta encontrada.");
+        boolean modoAnimado =
+                vista.getComboModo().getSelectedIndex() == 1;
+
+        if (!modoAnimado) {
+
+            vista.getPanelMapa().actualizar(
+                    modelo.getNodos(),
+                    modelo.getAristasVisibles(),
+                    res.ruta,
+                    null,
+                    null,
+                    inicio,
+                    fin
+            );
+
+            vista.setInfo("Ruta encontrada.");
+            return;
+        }
+
+        if (timerAnimacion != null && timerAnimacion.isRunning()) {
+            timerAnimacion.stop();
+        }
+
+        nodosAnimados = new java.util.ArrayList<>();
+        indiceAnimacion = 0;
+
+        timerAnimacion = new javax.swing.Timer(150, e -> {
+
+            if (indiceAnimacion < res.visitados.size()) {
+
+                nodosAnimados.add(res.visitados.get(indiceAnimacion));
+
+                vista.getPanelMapa().actualizar(
+                        modelo.getNodos(),
+                        modelo.getAristasVisibles(),
+                        null,
+                        nodosAnimados,
+                        null,
+                        inicio,
+                        fin
+                );
+
+                indiceAnimacion++;
+
+            } else {
+
+                ((javax.swing.Timer) e.getSource()).stop();
+
+                vista.getPanelMapa().actualizar(
+                        modelo.getNodos(),
+                        modelo.getAristasVisibles(),
+                        res.ruta,
+                        nodosAnimados,
+                        null,
+                        inicio,
+                        fin
+                );
+
+                vista.setInfo("Ruta encontrada.");
+            }
+        });
+
+        timerAnimacion.start();
+    }
+
+    private void iniciarAnimacion(ResultadoBusqueda res) {
+
+        java.util.List<Nodo> visitados = res.visitados;
+        java.util.List<Nodo> rutaFinal = res.ruta;
+
+        javax.swing.Timer timer = new javax.swing.Timer(200, null);
+
+        final int[] indice = {0};
+
+        timer.addActionListener(e -> {
+
+            if (indice[0] < visitados.size()) {
+
+                java.util.List<Nodo> parcial =
+                        visitados.subList(0, indice[0] + 1);
+
+                vista.getPanelMapa().actualizar(
+                        modelo.getNodos(),
+                        modelo.getAristasVisibles(),
+                        null,
+                        parcial,
+                        null,
+                        inicio,
+                        fin
+                );
+
+                indice[0]++;
+
+            } else {
+
+                timer.stop();
+
+                actualizarVista(rutaFinal);
+
+                vista.setInfo("Ruta encontrada.");
+            }
+        });
+
+        timer.start();
     }
 
     private void actualizarVista(java.util.List<Nodo> ruta) {

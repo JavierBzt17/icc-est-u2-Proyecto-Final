@@ -42,11 +42,12 @@ public class Grafo {
 
     public void agregarArista(String a, String b, boolean visible, boolean bidireccional) {
 
-        if (!adyacencias.containsKey(a) || !adyacencias.containsKey(b))
-            return;
+        if (!adyacencias.containsKey(a) || !adyacencias.containsKey(b)) return;
+
         if (!adyacencias.get(a).contains(b)) {
             adyacencias.get(a).add(b);
         }
+
         if (bidireccional) {
             if (!adyacencias.get(b).contains(a)) {
                 adyacencias.get(b).add(a);
@@ -54,10 +55,12 @@ public class Grafo {
         }
 
         if (visible) {
-            String clave = a + "-" + b;
-            aristasVisibles.put(clave, bidireccional);
+            aristasVisibles.put(a + "-" + b, bidireccional);
         }
     }
+
+
+
 
     public void eliminarArista(String a, String b) {
 
@@ -233,39 +236,45 @@ public class Grafo {
 
                     String[] partes = linea.split(",");
 
-                    boolean esFijo = partes.length > 3 &&
-                            partes[3].equals("1");
+                    if (partes.length >= 3) {
 
-                    agregarNodo(new Nodo(
-                            partes[0],
-                            Integer.parseInt(partes[1]),
-                            Integer.parseInt(partes[2]),
-                            esFijo
-                    ));
+                        boolean esFijo = partes.length > 3 &&
+                                        partes[3].equals("1");
+
+                        agregarNodo(new Nodo(
+                                partes[0],
+                                Integer.parseInt(partes[1]),
+                                Integer.parseInt(partes[2]),
+                                esFijo
+                        ));
+                    }
                 }
 
                 else if (leyendoAristas) {
 
                     String[] partes = linea.split(",");
 
-                    boolean bidireccional =
-                            partes.length > 2 &&
-                            partes[2].equals("1");
+                    if (partes.length >= 2) {
 
-                    agregarArista(
-                            partes[0],
-                            partes[1],
-                            true,
-                            bidireccional
-                    );
+                        boolean bidireccional =
+                                partes.length > 2 &&
+                                partes[2].equals("1");
+
+                        agregarArista(
+                                partes[0],
+                                partes[1],
+                                true,
+                                bidireccional
+                        );
+                    }
                 }
-
             }
 
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+
 
     public Map<String, Nodo> getNodos() {
         return nodos;
