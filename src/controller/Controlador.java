@@ -17,6 +17,8 @@ public class Controlador {
     private Nodo fin = null;
     private Nodo nodoTemporal = null;
 
+    private int contador = 1000;
+
     private String modo = "";
 
     public Controlador(Grafo modelo, VentanaPrincipal vista) {
@@ -67,11 +69,18 @@ public class Controlador {
         });
 
         vista.getBtnLimpiar().addActionListener(e -> {
+
             inicio = null;
             fin = null;
-            actualizarVista(null);
-            vista.setInfo("Reset realizado.");
+            nodoTemporal = null;
+
+            modelo.reiniciar();    
+            cargarDatos();       
+
+            vista.getPanelMapa().setNodoSeleccionado(null);
+            vista.setInfo("Sistema restaurado al último guardado.");
         });
+
 
         vista.getBtnGuardar().addActionListener(e -> {
             modelo.guardarGrafo(ARCHIVO);
@@ -125,35 +134,96 @@ public class Controlador {
                 break;
 
             case "CREAR":
-                String nuevoId = "N" + (modelo.getNodos().size() + 1);
+                String nuevoId = "N_User_" + contador++;
                 modelo.agregarNodo(new Nodo(nuevoId, x, y, false));
                 actualizarVista(null);
                 vista.setInfo("Nodo creado: " + nuevoId);
                 break;
 
             case "BORRAR":
+
                 if (nodoCercano != null) {
+
                     modelo.eliminarNodo(nodoCercano.getId());
+
+                    if (inicio == nodoCercano) inicio = null;
+                    if (fin == nodoCercano) fin = null;
+
                     actualizarVista(null);
                     vista.setInfo("Nodo eliminado.");
                 }
+
                 break;
 
+
             case "UNIR":
+
                 if (nodoCercano != null) {
+
                     if (nodoTemporal == null) {
                         nodoTemporal = nodoCercano;
-                    } else {
+                        vista.getPanelMapa().setNodoSeleccionado(nodoTemporal);
+                        vista.setInfo("Seleccione el segundo nodo.");
+                        return;
+                    }
+
+                    if (nodoTemporal == nodoCercano) {
+                        return;
+                    }
+
+                    int dx = Math.abs(nodoTemporal.getX() - nodoCercano.getX());
+                    int dy = Math.abs(nodoTemporal.getY() - nodoCercano.getY());
+
+                    if (dx > 20 && dy > 20) {
+
+                        JOptionPane.showMessageDialog(
+                                vista,
+                                "Solo se puede conectar de manera horizontal o vertical.",
+                                "Conexión inválida",
+                                JOptionPane.ERROR_MESSAGE
+                        );
+
+                        nodoTemporal = null;
+                        vista.getPanelMapa().setNodoSeleccionado(null);
+                        return;
+                    }
+
+                    int opcion = JOptionPane.showOptionDialog(
+                            vista,
+                            "Seleccione tipo de conexión:",
+                            "Tipo de Arista",
+                            JOptionPane.DEFAULT_OPTION,
+                            JOptionPane.QUESTION_MESSAGE,
+                            null,
+                            new Object[]{"Bidireccional", "Unidireccional"},
+                            "Bidireccional"
+                    );
+
+                    if (opcion == 0) {
+                        // Bidireccional
                         modelo.agregarArista(
                                 nodoTemporal.getId(),
                                 nodoCercano.getId(),
+                                true,
                                 true
                         );
-                        nodoTemporal = null;
-                        actualizarVista(null);
-                        vista.setInfo("Nodos unidos.");
                     }
+                    else if (opcion == 1) {
+                        // Unidireccional
+                        modelo.agregarArista(
+                                nodoTemporal.getId(),
+                                nodoCercano.getId(),
+                                true,
+                                false
+                        );
+                    }
+
+                    nodoTemporal = null;
+                    vista.getPanelMapa().setNodoSeleccionado(null);
+                    actualizarVista(null);
+                    vista.setInfo("Conexión creada.");
                 }
+
                 break;
 
             case "ROMPER":
@@ -176,7 +246,7 @@ public class Controlador {
 
     private Nodo buscarNodo(int x, int y) {
         for (Nodo n : modelo.getNodos().values()) {
-            if (n.getPoint().distance(x, y) < 15) {
+            if (n.getPoint().distance(x, y) < 25) {
                 return n;
             }
         }

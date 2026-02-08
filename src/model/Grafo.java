@@ -4,14 +4,15 @@ import java.io.*;
 import java.util.*;
 
 public class Grafo {
+
     private Map<String, Nodo> nodos;
     private Map<String, List<String>> adyacencias;
-    private Set<String> aristasVisibles; 
+    private Map<String, Boolean> aristasVisibles;
 
     public Grafo() {
         nodos = new HashMap<>();
         adyacencias = new HashMap<>();
-        aristasVisibles = new HashSet<>();
+        aristasVisibles = new HashMap<>();
     }
 
     public void reiniciar() {
@@ -22,174 +23,259 @@ public class Grafo {
 
     public void agregarNodo(Nodo nodo) {
         nodos.put(nodo.getId(), nodo);
-        if (!adyacencias.containsKey(nodo.getId())) {
-            adyacencias.put(nodo.getId(), new ArrayList<>());
-        }
+        adyacencias.putIfAbsent(nodo.getId(), new ArrayList<>());
     }
 
     public void eliminarNodo(String id) {
-        if (nodos.containsKey(id)) {
-            nodos.remove(id);
-            adyacencias.remove(id);
-            for (List<String> vecinos : adyacencias.values()) {
-                vecinos.remove(id);
-            }
-            aristasVisibles.removeIf(k -> k.contains(id));
+
+        nodos.remove(id);
+        adyacencias.remove(id);
+
+        for (List<String> vecinos : adyacencias.values()) {
+            vecinos.remove(id);
         }
+
+        aristasVisibles.entrySet().removeIf(e ->
+                e.getKey().startsWith(id + "-") ||
+                e.getKey().endsWith("-" + id));
     }
 
-    public void agregarArista(String a, String b, boolean visible) {
-        if (!adyacencias.containsKey(a) || !adyacencias.containsKey(b)) return;
-        
-        if (!a.equals(b) && !adyacencias.get(a).contains(b)) {
+    public void agregarArista(String a, String b, boolean visible, boolean bidireccional) {
+
+        if (!adyacencias.containsKey(a) || !adyacencias.containsKey(b))
+            return;
+        if (!adyacencias.get(a).contains(b)) {
             adyacencias.get(a).add(b);
-            adyacencias.get(b).add(a);
+        }
+        if (bidireccional) {
+            if (!adyacencias.get(b).contains(a)) {
+                adyacencias.get(b).add(a);
+            }
         }
 
         if (visible) {
-            String clave = a.compareTo(b) < 0 ? a + "-" + b : b + "-" + a;
-            aristasVisibles.add(clave);
+            String clave = a + "-" + b;
+            aristasVisibles.put(clave, bidireccional);
         }
     }
 
     public void eliminarArista(String a, String b) {
-        if (adyacencias.containsKey(a)) adyacencias.get(a).remove(b);
-        if (adyacencias.containsKey(b)) adyacencias.get(b).remove(a);
-        
-        String clave = a.compareTo(b) < 0 ? a + "-" + b : b + "-" + a;
-        aristasVisibles.remove(clave);
+
+        if (adyacencias.containsKey(a))
+            adyacencias.get(a).remove(b);
+
+        if (adyacencias.containsKey(b))
+            adyacencias.get(b).remove(a);
+
+        aristasVisibles.remove(a + "-" + b);
+        aristasVisibles.remove(b + "-" + a);
     }
 
+
     public ResultadoBusqueda bfsCompleto(String inicio, String fin) {
-        if (!nodos.containsKey(inicio) || !nodos.containsKey(fin)) return null;
+
+        if (!nodos.containsKey(inicio) || !nodos.containsKey(fin))
+            return null;
+
         long startTime = System.nanoTime();
-        List<Nodo> visitadosOrden = new ArrayList<>(); 
+
+        List<Nodo> visitadosOrden = new ArrayList<>();
         Queue<String> cola = new LinkedList<>();
-        Set<String> visitadosSet = new HashSet<>();
+        Set<String> visitados = new HashSet<>();
         Map<String, String> padres = new HashMap<>();
 
         cola.add(inicio);
-        visitadosSet.add(inicio);
-        visitadosOrden.add(nodos.get(inicio));
+        visitados.add(inicio);
         padres.put(inicio, null);
 
         while (!cola.isEmpty()) {
-            String actualId = cola.poll();
-            if (actualId.equals(fin)) {
+
+            String actual = cola.poll();
+            visitadosOrden.add(nodos.get(actual));
+
+            if (actual.equals(fin)) {
                 long tiempo = System.nanoTime() - startTime;
-                return new ResultadoBusqueda(reconstruirCamino(padres, fin), visitadosOrden, padres, tiempo);
+                return new ResultadoBusqueda(
+                        reconstruirCamino(padres, fin),
+                        visitadosOrden,
+                        padres,
+                        tiempo
+                );
             }
-            for (String vecino : adyacencias.get(actualId)) {
-                if (!visitadosSet.contains(vecino)) {
-                    visitadosSet.add(vecino);
-                    visitadosOrden.add(nodos.get(vecino));
-                    padres.put(vecino, actualId);
+
+            for (String vecino : adyacencias.get(actual)) {
+                if (!visitados.contains(vecino)) {
+                    visitados.add(vecino);
+                    padres.put(vecino, actual);
                     cola.add(vecino);
                 }
             }
         }
+
         return null;
     }
 
     public ResultadoBusqueda dfsCompleto(String inicio, String fin) {
-        if (!nodos.containsKey(inicio) || !nodos.containsKey(fin)) return null;
+
+        if (!nodos.containsKey(inicio) || !nodos.containsKey(fin))
+            return null;
+
         long startTime = System.nanoTime();
+
         List<Nodo> visitadosOrden = new ArrayList<>();
         Stack<String> pila = new Stack<>();
-        Set<String> visitadosSet = new HashSet<>();
+        Set<String> visitados = new HashSet<>();
         Map<String, String> padres = new HashMap<>();
 
         pila.push(inicio);
-        
-        while (!pila.isEmpty()) {
-            String actualId = pila.pop();
-            if (!visitadosSet.contains(actualId)) {
-                visitadosSet.add(actualId);
-                visitadosOrden.add(nodos.get(actualId));
 
-                if (actualId.equals(fin)) {
+        while (!pila.isEmpty()) {
+
+            String actual = pila.pop();
+
+            if (!visitados.contains(actual)) {
+
+                visitados.add(actual);
+                visitadosOrden.add(nodos.get(actual));
+
+                if (actual.equals(fin)) {
                     long tiempo = System.nanoTime() - startTime;
-                    return new ResultadoBusqueda(reconstruirCamino(padres, fin), visitadosOrden, padres, tiempo);
+                    return new ResultadoBusqueda(
+                            reconstruirCamino(padres, fin),
+                            visitadosOrden,
+                            padres,
+                            tiempo
+                    );
                 }
-                for (String vecino : adyacencias.get(actualId)) {
-                    if (!visitadosSet.contains(vecino)) {
-                        padres.put(vecino, actualId); 
+
+                for (String vecino : adyacencias.get(actual)) {
+                    if (!visitados.contains(vecino)) {
+                        padres.put(vecino, actual);
                         pila.push(vecino);
                     }
                 }
             }
         }
+
         return null;
     }
 
     private List<Nodo> reconstruirCamino(Map<String, String> padres, String fin) {
+
         List<Nodo> camino = new ArrayList<>();
         String actual = fin;
+
         while (actual != null) {
             camino.add(0, nodos.get(actual));
             actual = padres.get(actual);
         }
+
         return camino;
     }
 
     public void guardarGrafo(String rutaArchivo) {
+
         try (PrintWriter pw = new PrintWriter(new FileWriter(rutaArchivo))) {
+
             pw.println("NODOS");
-            for (Nodo n : nodos.values()) pw.println(n.toString());
-            
-            pw.println("ARISTAS");
-            Set<String> guardadas = new HashSet<>();
-            for (String id : adyacencias.keySet()) {
-                for (String vecino : adyacencias.get(id)) {
-                    String clave = id.compareTo(vecino) < 0 ? id + "-" + vecino : vecino + "-" + id;
-                    if (!guardadas.contains(clave)) {
-                        String esVisible = aristasVisibles.contains(clave) ? "1" : "0";
-                        pw.println(id + "," + vecino + "," + esVisible);
-                        guardadas.add(clave);
-                    }
-                }
+            for (Nodo n : nodos.values()) {
+                pw.println(n.toString());
             }
-        } catch (IOException e) { e.printStackTrace(); }
+
+            pw.println("ARISTAS");
+
+            for (Map.Entry<String, Boolean> entry : aristasVisibles.entrySet()) {
+
+                String clave = entry.getKey();
+                boolean bidireccional = entry.getValue();
+
+                String[] partes = clave.split("-");
+                pw.println(partes[0] + "," + partes[1] + "," +
+                        (bidireccional ? "1" : "0"));
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void cargarGrafo(String rutaArchivo) {
+
         reiniciar();
+
         File archivo = new File(rutaArchivo);
         if (!archivo.exists()) return;
 
         try (BufferedReader br = new BufferedReader(new FileReader(archivo))) {
+
             String linea;
             boolean leyendoNodos = false;
             boolean leyendoAristas = false;
 
             while ((linea = br.readLine()) != null) {
+
                 linea = linea.trim();
                 if (linea.isEmpty()) continue;
-                if (linea.equals("NODOS")) { leyendoNodos = true; leyendoAristas = false; continue; }
-                if (linea.equals("ARISTAS")) { leyendoNodos = false; leyendoAristas = true; continue; }
+
+                if (linea.equals("NODOS")) {
+                    leyendoNodos = true;
+                    leyendoAristas = false;
+                    continue;
+                }
+
+                if (linea.equals("ARISTAS")) {
+                    leyendoNodos = false;
+                    leyendoAristas = true;
+                    continue;
+                }
 
                 if (leyendoNodos) {
-                    try {
-                        String[] partes = linea.split(",");
-                        if (partes.length >= 3) {
-                            boolean esFijo = (partes.length > 3) && partes[3].equals("1");
-                            agregarNodo(new Nodo(partes[0], Integer.parseInt(partes[1]), Integer.parseInt(partes[2]), esFijo));
-                        }
-                    } catch(Exception e) {}
-                } else if (leyendoAristas) {
-                    try {
-                        String[] partes = linea.split(",");
-                        if (partes.length >= 2) {
-                            boolean visible = (partes.length > 2) && partes[2].equals("1");
-                            agregarArista(partes[0], partes[1], visible);
-                        }
-                    } catch(Exception e) {}
+
+                    String[] partes = linea.split(",");
+
+                    boolean esFijo = partes.length > 3 &&
+                            partes[3].equals("1");
+
+                    agregarNodo(new Nodo(
+                            partes[0],
+                            Integer.parseInt(partes[1]),
+                            Integer.parseInt(partes[2]),
+                            esFijo
+                    ));
                 }
+
+                else if (leyendoAristas) {
+
+                    String[] partes = linea.split(",");
+
+                    boolean bidireccional =
+                            partes.length > 2 &&
+                            partes[2].equals("1");
+
+                    agregarArista(
+                            partes[0],
+                            partes[1],
+                            true,
+                            bidireccional
+                    );
+                }
+
             }
-        } catch (IOException e) { e.printStackTrace(); }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    public Map<String, Nodo> getNodos() { return nodos; }
-    public Map<String, List<String>> getAdyacencias() { return adyacencias; }
-    public Set<String> getAristasVisibles() { return aristasVisibles; } 
+    public Map<String, Nodo> getNodos() {
+        return nodos;
+    }
+
+    public Map<String, List<String>> getAdyacencias() {
+        return adyacencias;
+    }
+
+    public Map<String, Boolean> getAristasVisibles() {
+        return aristasVisibles;
+    }
 }

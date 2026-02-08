@@ -1,9 +1,7 @@
 package view;
 
 import java.awt.*;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import javax.swing.*;
 import model.Nodo;
 
@@ -18,8 +16,11 @@ public class MapaPanel extends JPanel {
     private int offsetY;
 
     private Map<String, Nodo> nodos;
+    private Map<String, Boolean> aristasVisibles;
+
     private Nodo nodoInicio;
     private Nodo nodoFin;
+    private Nodo nodoSeleccionado;
 
     public MapaPanel() {
 
@@ -29,15 +30,17 @@ public class MapaPanel extends JPanel {
         imgH = icono.getIconHeight();
     }
 
-    public void actualizar(Map<String, Nodo> nodos,
-                           Set<String> aristas,
-                           List<Nodo> ruta,
-                           List<Nodo> animacion,
-                           Map<String, String> padres,
-                           Nodo inicio,
-                           Nodo fin) {
+    public void actualizar(
+            Map<String, Nodo> nodos,
+            Map<String, Boolean> aristasVisibles,
+            java.util.List<Nodo> ruta,
+            java.util.List<Nodo> animacion,
+            Map<String, String> padres,
+            Nodo inicio,
+            Nodo fin) {
 
         this.nodos = nodos;
+        this.aristasVisibles = aristasVisibles;
         this.nodoInicio = inicio;
         this.nodoFin = fin;
 
@@ -68,12 +71,49 @@ public class MapaPanel extends JPanel {
 
         Graphics2D g2 = (Graphics2D) g;
 
+        if (aristasVisibles != null) {
+
+            g2.setStroke(new BasicStroke(3));
+
+            for (Map.Entry<String, Boolean> entry : aristasVisibles.entrySet()) {
+
+                String clave = entry.getKey();
+                boolean bidireccional = entry.getValue();
+
+                String[] partes = clave.split("-");
+
+                if (partes.length == 2) {
+
+                    Nodo n1 = nodos.get(partes[0]);
+                    Nodo n2 = nodos.get(partes[1]);
+
+                    if (n1 != null && n2 != null) {
+
+                        int x1 = (int) (n1.getX() * escala) + offsetX;
+                        int y1 = (int) (n1.getY() * escala) + offsetY;
+
+                        int x2 = (int) (n2.getX() * escala) + offsetX;
+                        int y2 = (int) (n2.getY() * escala) + offsetY;
+
+                        if (bidireccional)
+                            g2.setColor(new Color(180, 180, 180));
+                        else
+                            g2.setColor(new Color(90, 90, 90));
+
+                        g2.drawLine(x1, y1, x2, y2);
+                    }
+                }
+            }
+        }
+
         for (Nodo n : nodos.values()) {
 
             int x = (int) (n.getX() * escala) + offsetX;
             int y = (int) (n.getY() * escala) + offsetY;
 
-            if (n == nodoInicio)
+            if (n == nodoSeleccionado)
+                g2.setColor(Color.BLUE);
+            else if (n == nodoInicio)
                 g2.setColor(Color.GREEN);
             else if (n == nodoFin)
                 g2.setColor(Color.RED);
@@ -90,5 +130,10 @@ public class MapaPanel extends JPanel {
 
     public int convertirY(int mouseY) {
         return (int) ((mouseY - offsetY) / escala);
+    }
+
+    public void setNodoSeleccionado(Nodo n) {
+        this.nodoSeleccionado = n;
+        repaint();
     }
 }

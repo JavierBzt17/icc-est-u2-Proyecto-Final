@@ -27,17 +27,17 @@ public class VentanaPrincipal extends JFrame {
         toolbar.setFloatable(false);
 
         btnNodo = new JButton("Crear Nodo");
-        btnBorrarNodo = new JButton("Borrar Nodo");
-        btnArista = new JButton("Unir Nodos");
-        btnBorrarArista = new JButton("Romper Unión");
+        btnBorrarNodo = new JButton("Eliminar Nodo");
+        btnArista = new JButton("Crear Conexión");
+        btnBorrarArista = new JButton("Eliminar Conexión");
         btnLimpiar = new JButton("Resetear");
         btnGuardar = new JButton("Guardar");
 
         btnLimpiar.setBackground(new Color(255, 200, 200));
         btnGuardar.setBackground(new Color(200, 255, 200));
 
-        btnInicio = new JButton("Sel. INICIO");
-        btnFin = new JButton("Sel. FIN");
+        btnInicio = new JButton("INICIO");
+        btnFin = new JButton("FIN");
 
         String[] modos = {
             "Modo: RUTA INSTANTÁNEA",
