@@ -191,16 +191,24 @@ public class Controlador {
      * Carga el grafo desde el archivo si existe.
      */
     private void cargarDatos() {
-        File f = new File(ARCHIVO);
 
-        if (f.exists()) {
-            modelo.cargarGrafo(ARCHIVO);
+        try (java.io.InputStream is =
+                getClass().getResourceAsStream("/resources/grafo.txt")) {
+
+            if (is == null) {
+                vista.setInfo("No se encontró grafo.txt dentro del JAR.");
+                return;
+            }
+
+            modelo.cargarGrafoDesdeStream(is);
             actualizarVista(null);
             vista.setInfo("Mapa cargado correctamente.");
-        } else {
-            vista.setInfo("No se encontró grafo.txt");
+
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
+
 
     /**
      * Maneja los clicks del usuario dependiendo del modo actual.

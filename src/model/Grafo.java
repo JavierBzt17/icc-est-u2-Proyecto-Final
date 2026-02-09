@@ -368,6 +368,78 @@ public class Grafo {
         }
     }
 
+    public void cargarGrafoDesdeStream(java.io.InputStream inputStream) {
+
+        reiniciar();
+
+        try (BufferedReader br =
+                new BufferedReader(new InputStreamReader(inputStream))) {
+
+            String linea;
+            boolean leyendoNodos = false;
+            boolean leyendoAristas = false;
+
+            while ((linea = br.readLine()) != null) {
+
+                linea = linea.trim();
+                if (linea.isEmpty()) continue;
+
+                if (linea.equals("NODOS")) {
+                    leyendoNodos = true;
+                    leyendoAristas = false;
+                    continue;
+                }
+
+                if (linea.equals("ARISTAS")) {
+                    leyendoNodos = false;
+                    leyendoAristas = true;
+                    continue;
+                }
+
+                if (leyendoNodos) {
+
+                    String[] partes = linea.split(",");
+
+                    if (partes.length >= 3) {
+
+                        boolean esFijo =
+                                partes.length > 3 &&
+                                partes[3].equals("1");
+
+                        agregarNodo(new Nodo(
+                                partes[0],
+                                Integer.parseInt(partes[1]),
+                                Integer.parseInt(partes[2]),
+                                esFijo
+                        ));
+                    }
+                }
+
+                else if (leyendoAristas) {
+
+                    String[] partes = linea.split(",");
+
+                    if (partes.length >= 2) {
+
+                        boolean bidireccional =
+                                partes.length > 2 &&
+                                partes[2].equals("1");
+
+                        agregarArista(
+                                partes[0],
+                                partes[1],
+                                true,
+                                bidireccional
+                        );
+                    }
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     /**
      * Devuelve todos los nodos del grafo.
      */
