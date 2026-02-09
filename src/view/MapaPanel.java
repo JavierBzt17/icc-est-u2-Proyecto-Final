@@ -7,25 +7,52 @@ import java.util.List;
 import javax.swing.*;
 import model.Nodo;
 
+/**
+ * Clase MapaPanel
+ *
+ * Es el panel gráfico encargado de dibujar:
+ * - El mapa de fondo
+ * - Los nodos
+ * - Las aristas
+ * - La ruta final encontrada
+ * - La animación de recorrido
+ *
+ * También maneja:
+ * - Escalado automático de la imagen
+ * - Conversión de coordenadas del mouse
+ * - Representación visual de nodos especiales (inicio, fin, seleccionados)
+ */
 public class MapaPanel extends JPanel {
 
+    // Imagen de fondo del mapa
     private final Image mapa;
+
+    // Dimensiones originales de la imagen
     private final int imgW;
     private final int imgH;
 
+    // Escala aplicada al mapa
     private double escala;
+
+    // Desplazamiento horizontal y vertical
     private int offsetX;
     private int offsetY;
 
+    // Estructuras que recibe desde el controlador
     private Map<String, Nodo> nodos;
     private Map<String, Boolean> aristasVisibles;
     private List<Nodo> nodosAnimacion;
     private List<Nodo> rutaFinal;
 
+    // Nodos especiales
     private Nodo nodoInicio;
     private Nodo nodoFin;
     private Nodo nodoSeleccionado;
 
+    /**
+     * Constructor del panel.
+     * Carga la imagen del mapa desde resources.
+     */
     public MapaPanel() {
 
         URL url = getClass().getResource("/resources/Mapa.png");
@@ -39,6 +66,10 @@ public class MapaPanel extends JPanel {
         imgH = icono.getIconHeight();
     }
 
+    /**
+     * Actualiza la información que debe dibujarse en el panel.
+     * Luego fuerza un repintado.
+     */
     public void actualizar(
             Map<String, Nodo> nodos,
             Map<String, Boolean> aristas,
@@ -58,6 +89,10 @@ public class MapaPanel extends JPanel {
         repaint();
     }
 
+    /**
+     * Método principal de dibujo del panel.
+     * Se ejecuta automáticamente cuando se llama a repaint().
+     */
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -65,6 +100,7 @@ public class MapaPanel extends JPanel {
         int panelW = getWidth();
         int panelH = getHeight();
 
+        // Calcula la escala manteniendo proporción
         escala = Math.min(
                 (double) panelW / imgW,
                 (double) panelH / imgH
@@ -73,9 +109,11 @@ public class MapaPanel extends JPanel {
         int mapaW = (int) (imgW * escala);
         int mapaH = (int) (imgH * escala);
 
+        // Centra el mapa dentro del panel
         offsetX = (panelW - mapaW) / 2;
         offsetY = (panelH - mapaH) / 2;
 
+        // Dibuja el mapa de fondo
         g.drawImage(mapa, offsetX, offsetY, mapaW, mapaH, this);
 
         if (nodos == null) return;
@@ -84,6 +122,9 @@ public class MapaPanel extends JPanel {
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
                 RenderingHints.VALUE_ANTIALIAS_ON);
 
+        /**
+         * Dibuja las aristas visibles
+         */
         if (aristasVisibles != null) {
 
             g2.setStroke(new BasicStroke(3));
@@ -108,6 +149,7 @@ public class MapaPanel extends JPanel {
                         int x2 = (int) (n2.getX() * escala) + offsetX;
                         int y2 = (int) (n2.getY() * escala) + offsetY;
 
+                        // Color diferente según tipo de arista
                         if (bidireccional)
                             g2.setColor(new Color(180, 180, 180));
                         else
@@ -115,6 +157,7 @@ public class MapaPanel extends JPanel {
 
                         g2.drawLine(x1, y1, x2, y2);
 
+                        // Si es unidireccional dibuja flecha
                         if (!bidireccional) {
                             dibujarFlecha(g2, x1, y1, x2, y2);
                         }
@@ -123,6 +166,9 @@ public class MapaPanel extends JPanel {
             }
         }
 
+        /**
+         * Dibuja la ruta final encontrada en color azul
+         */
         if (rutaFinal != null && rutaFinal.size() > 1) {
 
             g2.setColor(Color.BLUE);
@@ -143,11 +189,15 @@ public class MapaPanel extends JPanel {
             }
         }
 
+        /**
+         * Dibuja los nodos
+         */
         for (Nodo n : nodos.values()) {
 
             int x = (int) (n.getX() * escala) + offsetX;
             int y = (int) (n.getY() * escala) + offsetY;
 
+            // Asigna color según el estado del nodo
             if (n == nodoSeleccionado)
                 g2.setColor(Color.BLUE);
             else if (n == nodoInicio)
@@ -165,6 +215,9 @@ public class MapaPanel extends JPanel {
         }
     }
 
+    /**
+     * Dibuja la flecha para aristas unidireccionales.
+     */
     private void dibujarFlecha(Graphics2D g2,
                                int x1, int y1,
                                int x2, int y2) {
@@ -194,14 +247,25 @@ public class MapaPanel extends JPanel {
         g2.fillPolygon(flecha);
     }
 
+    /**
+     * Convierte coordenada X del mouse
+     * a coordenada real del mapa.
+     */
     public int convertirX(int mouseX) {
         return (int) ((mouseX - offsetX) / escala);
     }
 
+    /**
+     * Convierte coordenada Y del mouse
+     * a coordenada real del mapa.
+     */
     public int convertirY(int mouseY) {
         return (int) ((mouseY - offsetY) / escala);
     }
 
+    /**
+     * Establece un nodo como seleccionado visualmente.
+     */
     public void setNodoSeleccionado(Nodo n) {
         this.nodoSeleccionado = n;
         repaint();

@@ -8,27 +8,65 @@ import javax.swing.*;
 import model.*;
 import view.*;
 
+/**
+ * Clase Controlador
+ *
+ * Se encarga de gestionar la interacción entre el modelo (Grafo)
+ * y la vista (VentanaPrincipal).
+ *
+ * Controla:
+ * - Creación y eliminación de nodos
+ * - Creación y eliminación de aristas
+ * - Selección de nodo inicio y fin
+ * - Ejecución de algoritmos BFS y DFS
+ * - Animación de recorrido
+ * - Exportación de tiempos a CSV
+ */
 public class Controlador {
 
+    // Modelo principal que contiene el grafo
     private Grafo modelo;
+
+    // Vista principal de la aplicación
     private VentanaPrincipal vista;
 
+    // Nombre del archivo donde se guarda el grafo
     private static final String ARCHIVO = "grafo.txt";
 
+    // Nodo seleccionado como inicio
     private Nodo inicio = null;
+
+    // Nodo seleccionado como destino
     private Nodo fin = null;
+
+    // Nodo temporal usado para crear o eliminar aristas
     private Nodo nodoTemporal = null;
 
+    // Timer para animación de recorrido
     private Timer timerAnimacion;
+
+    // Lista de nodos visitados durante animación
     private List<Nodo> nodosAnimados;
+
+    // Índice actual de animación
     private int indiceAnimacion = 0;
 
+    // Contador para crear IDs únicos de nodos creados por el usuario
     private int contador = 1000;
+
+    // Modo actual del sistema (CREAR, BORRAR, UNIR, etc.)
     private String modo = "";
 
+    // Lista que almacena tiempos de ejecución BFS
     private List<Long> tiemposBFS = new ArrayList<>();
+
+    // Lista que almacena tiempos de ejecución DFS
     private List<Long> tiemposDFS = new ArrayList<>();
 
+    /**
+     * Constructor del controlador.
+     * Inicializa eventos, carga datos y muestra la vista.
+     */
     public Controlador(Grafo modelo, VentanaPrincipal vista) {
         this.modelo = modelo;
         this.vista = vista;
@@ -40,6 +78,10 @@ public class Controlador {
         vista.setVisible(true);
     }
 
+    /**
+     * Inicializa todos los listeners de botones y eventos del mouse.
+     * Define el comportamiento de cada botón.
+     */
     private void init() {
 
         vista.getBtnInicio().addActionListener(e -> {
@@ -77,6 +119,9 @@ public class Controlador {
             vista.setInfo("Seleccione dos nodos para romper unión.");
         });
 
+        /**
+         * Restaura el sistema al último estado guardado
+         */
         vista.getBtnLimpiar().addActionListener(e -> {
             inicio = null;
             fin = null;
@@ -90,16 +135,24 @@ public class Controlador {
             vista.setInfo("Sistema restaurado al último guardado.");
         });
 
-
+        /**
+         * Guarda el grafo actual en archivo
+         */
         vista.getBtnGuardar().addActionListener(e -> {
             modelo.guardarGrafo(ARCHIVO);
             vista.setInfo("Progreso guardado.");
         });
 
+        /**
+         * Abre ventana con estadísticas de tiempos BFS y DFS
+         */
         vista.getBtnTiempos().addActionListener(e -> {
             new VentanaTiempos(tiemposBFS, tiemposDFS).setVisible(true);
         });
 
+        /**
+         * Detecta clicks sobre el mapa
+         */
         vista.getPanelMapa().addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -110,6 +163,10 @@ public class Controlador {
         });
     }
 
+    /**
+     * Ajusta el contador de nodos creados por usuario
+     * para evitar IDs repetidos.
+     */
     private void ajustarContador() {
 
         int max = 1000;
@@ -130,6 +187,9 @@ public class Controlador {
         contador = max;
     }
 
+    /**
+     * Carga el grafo desde el archivo si existe.
+     */
     private void cargarDatos() {
         File f = new File(ARCHIVO);
 
@@ -142,6 +202,15 @@ public class Controlador {
         }
     }
 
+    /**
+     * Maneja los clicks del usuario dependiendo del modo actual.
+     * Permite:
+     * - Crear nodos
+     * - Eliminar nodos
+     * - Crear aristas
+     * - Eliminar aristas
+     * - Seleccionar inicio y fin
+     */
     private void manejarClick(int x, int y) {
 
         Nodo nodoCercano = buscarNodo(x, y);
@@ -177,6 +246,11 @@ public class Controlador {
                 }
                 break;
 
+            /**
+             * Crea una arista validando:
+             * - Que sea horizontal o vertical
+             * - Que no exista nodo intermedio
+             */
             case "UNIR":
 
                 if (nodoCercano == null) return;
@@ -210,7 +284,7 @@ public class Controlador {
                     return;
                 }
 
-                // 🔥 VERIFICAR QUE NO HAYA NODOS ENTRE MEDIO
+                // Verifica que no haya nodos intermedios entre ambos
                 for (Nodo n : modelo.getNodos().values()) {
 
                     if (n == nodoTemporal || n == nodoCercano) continue;
@@ -305,10 +379,12 @@ public class Controlador {
                     }
                 }
                 break;
-
         }
     }
 
+    /**
+     * Busca un nodo cercano a las coordenadas dadas.
+     */
     private Nodo buscarNodo(int x, int y) {
         for (Nodo n : modelo.getNodos().values()) {
             if (n.getPoint().distance(x, y) < 25) return n;
@@ -316,6 +392,10 @@ public class Controlador {
         return null;
     }
 
+    /**
+     * Ejecuta el algoritmo BFS o DFS.
+     * Puede mostrar resultado inmediato o animado.
+     */
     private void ejecutar(String tipo) {
 
         if (inicio == null || fin == null) {
@@ -337,6 +417,7 @@ public class Controlador {
         } else {
             tiemposDFS.add(res.tiempo);
         }
+
         exportarCSV();
 
         boolean modoAnimado =
@@ -403,6 +484,10 @@ public class Controlador {
         timerAnimacion.start();
     }
 
+    /**
+     * Exporta los tiempos de ejecución BFS y DFS
+     * a un archivo llamado tiempos.csv
+     */
     private void exportarCSV() {
 
         try (java.io.PrintWriter pw = new java.io.PrintWriter("tiempos.csv")) {
@@ -429,6 +514,9 @@ public class Controlador {
         }
     }
 
+    /**
+     * Actualiza la vista del mapa.
+     */
     private void actualizarVista(List<Nodo> ruta) {
         vista.getPanelMapa().actualizar(
                 modelo.getNodos(),
